@@ -1,0 +1,42 @@
+#pragma kernel CSMain
+RWTexture2D<float4> Result;
+Buffer<int> VoxelData;
+int2 TextureResolution;
+float4x4 ViewMatrix;
+float MaxDistance;
+float VoxelSize;
+int3 VoxelDataResolution;
+
+
+float3 trace(float3 origin, float3 direction)
+{
+    float t = 0;
+    float3 minBound = float3(0, 0, 0);
+    float3 maxBound = float3(VoxelDataResolution * VoxelSize);
+    //if origin outside the bounding box
+    if (origin.x < minBound.x || origin.y < minBound.y || origin.z < minBound.z ||
+        origin.x > maxBound.x || origin.y > maxBound.y || origin.z > maxBound.z)
+    {
+        //find the bounding box intersection point
+        
+        float3 minT=(minBound-origin)/direction;
+        float3 maxT=(maxBound-origin)/direction;
+    }
+
+    return float3(1., 1., 1.);
+}
+
+[numthreads(8,8,1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = id.xy / float2(TextureResolution);
+    uv -= 0.5;
+    uv.y *= TextureResolution.y / TextureResolution.x;
+
+    float3 dir = float3(uv.x, uv.y, 1.);
+    float3 origin = ViewMatrix[3].xyz;
+    dir = normalize(dir);
+    dir = (ViewMatrix * float4(dir.x,dir.y,dir.z,1.)).xyz;
+
+    Result[id.xy] = float4(trace(origin, dir), 1);
+}
