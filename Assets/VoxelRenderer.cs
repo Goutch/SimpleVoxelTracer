@@ -10,7 +10,7 @@ public class VoxelRenderer : MonoBehaviour
     [SerializeField] private float voxelSize=1f;
     private RenderTexture texture;
     private RawImage image;
-    private VoxelData data;
+    private VoxelData voxelData;
     private ComputeBuffer voxelDataBuffer;
 
     private void Start()
@@ -19,6 +19,7 @@ public class VoxelRenderer : MonoBehaviour
         CreateRenderTexture(Screen.width, Screen.height);
         voxelDataBuffer = new ComputeBuffer(VoxelData.SIZE_X * VoxelData.SIZE_Y * VoxelData.SIZE_Z, sizeof(int));
         CreateVoxelData();
+
         image.texture = texture;
         SetShaderConstants();
     }
@@ -27,7 +28,6 @@ public class VoxelRenderer : MonoBehaviour
         if (Screen.width!=texture.width||Screen.height != texture.height)
         {
             CreateRenderTexture(Screen.width,Screen.height);
-            shader.SetInts("TextureResolution", new int[]{texture.width,texture.height});
         }
         RenderVoxelDataInComputeShader();
     }
@@ -39,17 +39,18 @@ public class VoxelRenderer : MonoBehaviour
 
     void CreateVoxelData()
     {
-        data = new VoxelData();
+        voxelData = new VoxelData();
         for (int x = 0; x < VoxelData.SIZE_X; x++)
         {
             for (int y = 0; y < VoxelData.SIZE_Y; y++)
             {
                 for (int z = 0; z < VoxelData.SIZE_Z; z++)
                 {
-                    data[x, y, z] = 1;
+                    voxelData[x, y, z] = 1;
                 }
             }
         }
+
     }
 
     void CreateRenderTexture(int width, int height)
@@ -57,6 +58,7 @@ public class VoxelRenderer : MonoBehaviour
         texture = new RenderTexture(width, height, 1);
         texture.enableRandomWrite = true;
         texture.Create();
+        shader.SetInts("TextureResolution", new int[]{texture.width,texture.height});
     }
 
     void SetShaderConstants()
@@ -65,16 +67,20 @@ public class VoxelRenderer : MonoBehaviour
         shader.SetInts("VoxelDataResolution",new int[]{VoxelData.SIZE_X, VoxelData.SIZE_Y, VoxelData.SIZE_Z});
         shader.SetFloat("MaxDistance", maxDistance);
         shader.SetFloat("VoxelSize", voxelSize);
-        shader.SetTexture(id, "Result", texture);
+        shader.SetTexture(id, "OutputTexture", texture);
     }
     
     void RenderVoxelDataInComputeShader()
     {
+        voxelDataBuffer.SetData(voxelData.Data);
+        
+        Matrix4x4 viewRotation = Matrix4x4.Inverse(Matrix4x4.Rotate(Camera.main.transform.rotation));
+        Vector3 viewPosition=Camera.main.transform.position;
         int id = shader.FindKernel("CSMain");
-    
+        SetShaderConstants();
         shader.SetBuffer(id, "VoxelData", voxelDataBuffer);
-        shader.SetMatrix("ViewRotation", (Camera.main.transform.localToWorldMatrix.inverse));
-    
-        shader.Dispatch(id, texture.width / 8, texture.height / 8, 1);
+        shader.SetMatrix("ViewRotation", viewRotation);
+        shader.SetVector("ViewPosition", viewPosition);
+        shader.Dispatch(id, (int)Mathf.Ceil(texture.width / 8f), (int)Mathf.Ceil(texture.height / 8f), 1);
     }
 }
