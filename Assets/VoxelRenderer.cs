@@ -56,9 +56,21 @@ public class VoxelRenderer : MonoBehaviour
                 for (int z = 0; z < VoxelData.SIZE_Z; z++)
                 {
                     count++;
-                    if (Vector3.Distance(new Vector3( VoxelData.SIZE_X / 2, VoxelData.SIZE_X / 2, VoxelData.SIZE_X / 2),new Vector3(x,y,z)) < VoxelData.SIZE_X / 2)
+                    //sphere
+                     if (Vector3.Distance(new Vector3( VoxelData.SIZE_X / 2, VoxelData.SIZE_X / 2, VoxelData.SIZE_X / 2),new Vector3(x,y,z)) < VoxelData.SIZE_X / 2)
+                         voxelData[x, y, z] = count % (materialColors.Length);
+                     else voxelData[x, y, z] = -1;
+                    //cube
+                    /*if (x > 1 && x < VoxelData.SIZE_X - 2&&
+                        y > 1 && y < VoxelData.SIZE_Y - 2&&
+                        z > 1 && z < VoxelData.SIZE_Z - 2)
+                    {
                         voxelData[x, y, z] = count % (materialColors.Length);
-                    else voxelData[x, y, z] = -1;
+                    }
+                    else
+                    {
+                        voxelData[x, y, z] = -1;
+                    }*/
                 }
             }
         }

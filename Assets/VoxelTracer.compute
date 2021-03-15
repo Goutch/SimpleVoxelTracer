@@ -24,7 +24,7 @@ int getIndex(uint3 position)
         position.z;
 }
 
-int3 getStep(float3 origin, float3 direction, int3 stepDir, float3 planes)
+int3 getNextStep(float3 origin, float3 direction, int3 stepDir, float3 planes)
 {
     int3 step = int3(0, 0, 0);
     float t = MaxDistance;
@@ -51,12 +51,11 @@ int3 getStep(float3 origin, float3 direction, int3 stepDir, float3 planes)
 float3 trace(float3 origin, float3 direction)
 {
     //division by 0 protection just to be safe
-    /*if (direction.x == 0.)direction.x = .00000001f;
+    if (direction.x == 0.)direction.x = .00000001f;
     if (direction.y == 0.)direction.y = .00000001f;
-    if (direction.z == 0.)direction.z = .00000001f;*/
+    if (direction.z == 0.)direction.z = .00000001f;
 
     float t = 0.;
-
 
     int3 stepDir = int3(direction.x < 0 ? -1 : 1, direction.y < 0 ? -1 : 1, direction.z < 0 ? -1 : 1);
 
@@ -64,6 +63,7 @@ float3 trace(float3 origin, float3 direction)
 
     float3 minBound = float3(0., 0., 0.);
     float3 maxBound = float3(VoxelDataResolution * VoxelSize);
+    int3 nextStep=int3(0,0,0);
     if (origin.x < minBound.x || origin.y < minBound.y || origin.z < minBound.z ||
         origin.x > maxBound.x || origin.y > maxBound.y || origin.z > maxBound.z)
     {
@@ -78,6 +78,7 @@ float3 trace(float3 origin, float3 direction)
             p.z > minBound.z && p.z < maxBound.z)
         {
             t = min(t, ts.x);
+            nextStep=int3(stepDir.x,0,0);
         }
         p = direction * ts.y + origin;
         if (ts.y > 0 &&
@@ -85,6 +86,7 @@ float3 trace(float3 origin, float3 direction)
             p.z > minBound.z && p.z < maxBound.z)
         {
             t = min(t, ts.y);
+            nextStep=int3(0,stepDir.y,0);
         }
         p = direction * ts.z + origin;
         if (ts.z > 0 &&
@@ -92,6 +94,7 @@ float3 trace(float3 origin, float3 direction)
             p.y > minBound.y && p.y < maxBound.y)
         {
             t = min(t, ts.z);
+            nextStep=int3(0,0,stepDir.z);
         }
         if (t >= MaxDistance)
             return SkyColor;
@@ -100,10 +103,10 @@ float3 trace(float3 origin, float3 direction)
     //Begin tracing the ray along the voxel data
     float3 worldPosition = direction * t + origin;
     int3 unitPosition = int3(
-        clamp(worldPosition.x/VoxelSize, 0, VoxelDataResolution.x-1),
-        clamp(worldPosition.y/VoxelSize, 0, VoxelDataResolution.y-1),
-        clamp(worldPosition.z/VoxelSize, 0, VoxelDataResolution.z-1));
-    int3 step = stepDir;
+        clamp(floor(worldPosition.x / VoxelSize), 0, VoxelDataResolution.x - 1),
+        clamp(floor(worldPosition.y / VoxelSize), 0, VoxelDataResolution.y - 1),
+        clamp(floor(worldPosition.z / VoxelSize), 0, VoxelDataResolution.z - 1));
+    
     for (uint i = 0; i < 256; i++)
     {
         int index = getIndex(unitPosition);
@@ -115,10 +118,9 @@ float3 trace(float3 origin, float3 direction)
             unitPosition.z < 0)
             break;
         if (VoxelData[index] != -1)return VoxelMaterialColor[VoxelData[index]];
+        unitPosition += nextStep;
+        nextStep = getNextStep(origin, direction, stepDir, (unitPosition+stepDir)*VoxelSize);
 
-        float3 nextPlanes = float3(unitPosition) * VoxelSize;
-        step = getStep(origin, direction, stepDir, nextPlanes);
-        unitPosition += step;
     }
     return SkyColor;
 }
