@@ -11,7 +11,7 @@ public class VoxelRenderer : MonoBehaviour
     [SerializeField] private float voxelSize = 1f;
     [SerializeField] private Color skyColor = Color.gray;
     [SerializeField] Color[] materialColors;
-
+    [SerializeField] private Vector3 position;
     private RenderTexture texture;
     private RawImage image;
     private VoxelData voxelData;
@@ -57,9 +57,10 @@ public class VoxelRenderer : MonoBehaviour
                 {
                     count++;
                     //sphere
-                     if (Vector3.Distance(new Vector3( VoxelData.SIZE_X / 2, VoxelData.SIZE_X / 2, VoxelData.SIZE_X / 2),new Vector3(x,y,z)) < VoxelData.SIZE_X / 2)
-                         voxelData[x, y, z] = count % (materialColors.Length);
-                     else voxelData[x, y, z] = -1;
+                    if (Vector3.Distance(new Vector3(VoxelData.SIZE_X / 2, VoxelData.SIZE_X / 2, VoxelData.SIZE_X / 2),
+                        new Vector3(x, y, z)) < VoxelData.SIZE_X / 2)
+                        voxelData[x, y, z] = count % (materialColors.Length);
+                    else voxelData[x, y, z] = -1;
                     //cube
                     /*if (x > 1 && x < VoxelData.SIZE_X - 2&&
                         y > 1 && y < VoxelData.SIZE_Y - 2&&
@@ -106,6 +107,7 @@ public class VoxelRenderer : MonoBehaviour
         shader.SetBuffer(id, "VoxelData", voxelDataBuffer);
         shader.SetMatrix("ViewRotation", viewRotation);
         shader.SetVector("ViewPosition", viewPosition);
+        shader.SetVector("VoxelDataPosition", position);
         shader.Dispatch(id, (int) Mathf.Ceil(texture.width / 8f), (int) Mathf.Ceil(texture.height / 8f), 1);
     }
 }

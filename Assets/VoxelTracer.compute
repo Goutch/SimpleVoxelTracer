@@ -8,12 +8,14 @@ int2 TextureResolution;
 Buffer<int> VoxelData;
 int3 VoxelDataResolution;
 float VoxelSize;
+float3 VoxelDataPosition;
 
 Buffer<float4> VoxelMaterialColor;
 
 float4x4 ViewRotation;
 float3 ViewPosition;
 float MaxDistance;
+
 
 float3 SkyColor;
 
@@ -26,9 +28,9 @@ int getIndex(uint3 position)
 
 int3 getNextStep(float3 origin, float3 direction, int3 stepDir, float3 planes)
 {
-    int3 step = int3(0, 0, 0);
     float t = MaxDistance;
     float3 ts = (planes - origin) / direction;
+    int3 step = int3(0, 0, 0);
     if (ts.x < t)
     {
         t = ts.x;
@@ -41,7 +43,6 @@ int3 getNextStep(float3 origin, float3 direction, int3 stepDir, float3 planes)
     }
     if (ts.z < t)
     {
-        t = ts.z;
         step = int3(0, 0, stepDir.z);
     }
 
@@ -60,10 +61,10 @@ float3 trace(float3 origin, float3 direction)
     int3 stepDir = int3(direction.x < 0 ? -1 : 1, direction.y < 0 ? -1 : 1, direction.z < 0 ? -1 : 1);
 
     //if origin outside the bounding box
-
-    float3 minBound = float3(0., 0., 0.);
+    //trace the bounding box
+    float3 minBound = 0;
     float3 maxBound = float3(VoxelDataResolution * VoxelSize);
-    int3 nextStep=int3(0,0,0);
+
     if (origin.x < minBound.x || origin.y < minBound.y || origin.z < minBound.z ||
         origin.x > maxBound.x || origin.y > maxBound.y || origin.z > maxBound.z)
     {
@@ -78,7 +79,6 @@ float3 trace(float3 origin, float3 direction)
             p.z > minBound.z && p.z < maxBound.z)
         {
             t = min(t, ts.x);
-            nextStep=int3(stepDir.x,0,0);
         }
         p = direction * ts.y + origin;
         if (ts.y > 0 &&
@@ -86,7 +86,6 @@ float3 trace(float3 origin, float3 direction)
             p.z > minBound.z && p.z < maxBound.z)
         {
             t = min(t, ts.y);
-            nextStep=int3(0,stepDir.y,0);
         }
         p = direction * ts.z + origin;
         if (ts.z > 0 &&
@@ -94,7 +93,6 @@ float3 trace(float3 origin, float3 direction)
             p.y > minBound.y && p.y < maxBound.y)
         {
             t = min(t, ts.z);
-            nextStep=int3(0,0,stepDir.z);
         }
         if (t >= MaxDistance)
             return SkyColor;
@@ -102,14 +100,13 @@ float3 trace(float3 origin, float3 direction)
 
     //Begin tracing the ray along the voxel data
     float3 worldPosition = direction * t + origin;
-    int3 unitPosition = int3(
-        clamp(floor(worldPosition.x / VoxelSize), 0, VoxelDataResolution.x - 1),
-        clamp(floor(worldPosition.y / VoxelSize), 0, VoxelDataResolution.y - 1),
-        clamp(floor(worldPosition.z / VoxelSize), 0, VoxelDataResolution.z - 1));
-    
+    int3 unitPosition = int3(clamp(floor((worldPosition) / VoxelSize), 0, VoxelDataResolution.x - float3(1,1,1)));
+    float3 planes = float3(
+        stepDir.x > 0 ? ceil(unitPosition.x + 0.5) * VoxelSize : floor(unitPosition.x + 0.5) * VoxelSize,
+        stepDir.y > 0 ? ceil(unitPosition.y + 0.5) * VoxelSize : floor(unitPosition.y + 0.5) * VoxelSize,
+        stepDir.z > 0 ? ceil(unitPosition.z + 0.5) * VoxelSize : floor(unitPosition.z + 0.5) * VoxelSize);
     for (uint i = 0; i < 256; i++)
     {
-        int index = getIndex(unitPosition);
         if (unitPosition.x >= VoxelDataResolution.x ||
             unitPosition.y >= VoxelDataResolution.y ||
             unitPosition.z >= VoxelDataResolution.z ||
@@ -117,10 +114,13 @@ float3 trace(float3 origin, float3 direction)
             unitPosition.y < 0 ||
             unitPosition.z < 0)
             break;
-        if (VoxelData[index] != -1)return VoxelMaterialColor[VoxelData[index]];
-        unitPosition += nextStep;
-        nextStep = getNextStep(origin, direction, stepDir, (unitPosition+stepDir)*VoxelSize);
+        int index = getIndex(unitPosition);
+        if (VoxelData[index] != -1)
+            return VoxelMaterialColor[VoxelData[index]];
 
+        int3 step = getNextStep(origin, direction, stepDir, planes);
+        unitPosition += step;
+        planes += step * VoxelSize;
     }
     return SkyColor;
 }

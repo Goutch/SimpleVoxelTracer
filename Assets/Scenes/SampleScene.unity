@@ -280,7 +280,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5241e1198b86470aa2d845fcd35c1238, type: 3}
   m_Name: 
@@ -339,7 +339,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 4623e48395cc8c544934e76d22017076, type: 3}
   maxDistance: 500
-  voxelSize: 1
+  voxelSize: 0.5
   skyColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   materialColors:
   - {r: 1, g: 0, b: 0, a: 1}
@@ -348,6 +348,7 @@ MonoBehaviour:
   - {r: 1, g: 1, b: 0, a: 1}
   - {r: 0, g: 1, b: 1, a: 1}
   - {r: 1, g: 0, b: 1, a: 1}
+  position: {x: 0, y: 0, z: 0}
 --- !u!114 &1282117523
 MonoBehaviour:
   m_ObjectHideFlags: 0
