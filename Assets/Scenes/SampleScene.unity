@@ -339,7 +339,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shader: {fileID: 7200000, guid: 4623e48395cc8c544934e76d22017076, type: 3}
   maxDistance: 500
-  voxelSize: 0.5
+  voxelSize: 1
   skyColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   materialColors:
   - {r: 1, g: 0, b: 0, a: 1}
